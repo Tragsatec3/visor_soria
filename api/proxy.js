@@ -1,19 +1,19 @@
-import { createProxyMiddleware } from 'http-proxy-middleware';
+// api/proxy.js
+import fetch from 'node-fetch';
 
-export default function handler(req, res) {
-  const proxy = createProxyMiddleware({
-    target: 'http://ovc.catastro.meh.es/Cartografia/WMS/ServidorWMS.aspx',
-    changeOrigin: true,
-    pathRewrite: { '^/api/proxy': '' }, // Elimina '/api/proxy' del inicio de la ruta
-    onProxyRes(proxyRes) {
-      proxyRes.headers['Access-Control-Allow-Origin'] = '*'; // Permite CORS
-    },
-  });
+export default async function handler(req, res) {
+  const { query } = req; // extrae los parámetros de consulta
+  const baseURL = "http://ovc.catastro.meh.es/Cartografia/WMS/ServidorWMS.aspx?";
 
-  proxy(req, res, (err) => {
-    if (err) {
-      console.error('Error en el proxy:', err);
-      res.status(500).send("Error en el proxy: " + err.message);
-    }
-  });
+  const queryString = new URLSearchParams(query).toString();
+  const url = `${baseURL}${queryString}`;
+
+  try {
+    const response = await fetch(url);
+    const data = await response.text();
+    res.status(200).send(data);
+  } catch (error) {
+    console.error('Error al obtener datos del WMS:', error);
+    res.status(500).json({ message: 'Error al obtener datos del WMS' });
+  }
 }
